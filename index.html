@@ -8,7 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
   :root {
     --field:#16321F; --field-dark:#10241A; --paper:#F1E9D2; --paper-dim:#E6DBBE;
@@ -42,32 +41,67 @@
 <body>
 <div id="root"></div>
 
-<script type="text/babel" data-presets="react">
-const { useState, useEffect, useMemo } = React;
-
-const ZONES = ['up-in','up-mid','up-away','mid-in','mid-mid','mid-away','low-in','low-mid','low-away'];
-
+<script>
+const {
+  useState,
+  useEffect,
+  useMemo
+} = React;
+const ZONES = ['up-in', 'up-mid', 'up-away', 'mid-in', 'mid-mid', 'mid-away', 'low-in', 'low-mid', 'low-away'];
 function getApiUrl() {
   const params = new URLSearchParams(window.location.search);
   return params.get('api') || '';
 }
-
-function TrendChart({ data }) {
-  if (data.length < 2) return <p style={{fontSize:13, opacity:0.7}}>Log a couple more sessions to see a trend line.</p>;
-  const w = 320, h = 120, pad = 24;
-  const xs = data.map((_, i) => pad + (i * (w - pad*2)) / (data.length - 1));
-  const ys = data.map(d => h - pad - (d.pct * (h - pad*2)) / 100);
+function TrendChart({
+  data
+}) {
+  if (data.length < 2) return /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      opacity: 0.7
+    }
+  }, "Log a couple more sessions to see a trend line.");
+  const w = 320,
+    h = 120,
+    pad = 24;
+  const xs = data.map((_, i) => pad + i * (w - pad * 2) / (data.length - 1));
+  const ys = data.map(d => h - pad - d.pct * (h - pad * 2) / 100);
   const points = xs.map((x, i) => `${x},${ys[i]}`).join(' ');
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} style={{width:'100%', height:120}}>
-      <line x1={pad} y1={h-pad} x2={w-pad} y2={h-pad} stroke="rgba(32,27,18,0.2)" strokeWidth="1"/>
-      <line x1={pad} y1={pad} x2={pad} y2={h-pad} stroke="rgba(32,27,18,0.2)" strokeWidth="1"/>
-      <polyline points={points} fill="none" stroke="#9E3B2E" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
-      {xs.map((x, i) => <circle key={i} cx={x} cy={ys[i]} r="3.5" fill="#9E3B2E"/>)}
-    </svg>
-  );
+  return /*#__PURE__*/React.createElement("svg", {
+    viewBox: `0 0 ${w} ${h}`,
+    style: {
+      width: '100%',
+      height: 120
+    }
+  }, /*#__PURE__*/React.createElement("line", {
+    x1: pad,
+    y1: h - pad,
+    x2: w - pad,
+    y2: h - pad,
+    stroke: "rgba(32,27,18,0.2)",
+    strokeWidth: "1"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: pad,
+    y1: pad,
+    x2: pad,
+    y2: h - pad,
+    stroke: "rgba(32,27,18,0.2)",
+    strokeWidth: "1"
+  }), /*#__PURE__*/React.createElement("polyline", {
+    points: points,
+    fill: "none",
+    stroke: "#9E3B2E",
+    strokeWidth: "2.5",
+    strokeLinejoin: "round",
+    strokeLinecap: "round"
+  }), xs.map((x, i) => /*#__PURE__*/React.createElement("circle", {
+    key: i,
+    cx: x,
+    cy: ys[i],
+    r: "3.5",
+    fill: "#9E3B2E"
+  })));
 }
-
 function App() {
   const [apiUrl, setApiUrl] = useState(getApiUrl());
   const [urlInput, setUrlInput] = useState('');
@@ -80,9 +114,9 @@ function App() {
   const [showAdd, setShowAdd] = useState(false);
   const [badge, setBadge] = useState(null);
   const [saving, setSaving] = useState(false);
-
-  const fetchData = async (url) => {
-    setLoading(true); setError('');
+  const fetchData = async url => {
+    setLoading(true);
+    setError('');
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Server responded with ' + res.status);
@@ -95,9 +129,9 @@ function App() {
       setLoading(false);
     }
   };
-
-  useEffect(() => { if (apiUrl) fetchData(apiUrl); }, [apiUrl]);
-
+  useEffect(() => {
+    if (apiUrl) fetchData(apiUrl);
+  }, [apiUrl]);
   const connect = () => {
     const trimmed = urlInput.trim();
     if (!trimmed) return;
@@ -106,73 +140,75 @@ function App() {
     window.history.replaceState({}, '', window.location.pathname + '?' + params.toString());
     setApiUrl(trimmed);
   };
-
   const bullpenForPlayer = useMemo(() => {
     if (!data) return [];
-    return data.bullpen.filter(s => s.player === selectedId).sort((a,b) => a.date.localeCompare(b.date));
+    return data.bullpen.filter(s => s.player === selectedId).sort((a, b) => a.date.localeCompare(b.date));
   }, [data, selectedId]);
-
   const strikes = draft.filter(d => d.result === 'strike').length;
   const total = draft.length;
-  const livePct = total ? Math.round((strikes/total)*100) : 0;
-
-  const logPitch = (result, zone) => setDraft([...draft, { result, zone: zone || null }]);
+  const livePct = total ? Math.round(strikes / total * 100) : 0;
+  const logPitch = (result, zone) => setDraft([...draft, {
+    result,
+    zone: zone || null
+  }]);
   const undo = () => setDraft(draft.slice(0, -1));
-
-  const bestPrevPct = bullpenForPlayer.length ? Math.max(...bullpenForPlayer.map(s => Math.round(s.strikePct*100))) : null;
-
+  const bestPrevPct = bullpenForPlayer.length ? Math.max(...bullpenForPlayer.map(s => Math.round(s.strikePct * 100))) : null;
   const changeupUnlocked = useMemo(() => {
     if (bullpenForPlayer.length < 3) return false;
     const avg = bullpenForPlayer.reduce((sum, s) => sum + s.strikePct, 0) / bullpenForPlayer.length;
     return avg >= 0.6;
   }, [bullpenForPlayer]);
-
   const pickoffCleared = useMemo(() => {
     if (!data || !data.pickoffStatus) return false;
     const rec = data.pickoffStatus.find(p => p.player === selectedId);
     return rec ? rec.cleared : false;
   }, [data, selectedId]);
-
   const selectedRoster = useMemo(() => {
     if (!data) return null;
     return data.roster.find(p => p.name === selectedId) || null;
   }, [data, selectedId]);
-
   const currentBuildupWeek = useMemo(() => {
     if (!data || !data.buildup || !data.buildup.length) return null;
-    const today = new Date().toISOString().slice(0,10);
+    const today = new Date().toISOString().slice(0, 10);
     const started = data.buildup.filter(w => w.startDate && w.startDate <= today);
     return started.length ? started[started.length - 1] : data.buildup[0];
   }, [data]);
-
   const springRecord = useMemo(() => {
     if (!data || !data.springBaseline) return null;
     return data.springBaseline.find(p => p.player === selectedId) || null;
   }, [data, selectedId]);
-
   const fallGameRecord = useMemo(() => {
     if (!data || !data.fallGameStats) return null;
     return data.fallGameStats.find(p => p.player === selectedId) || null;
   }, [data, selectedId]);
-
   const saveSession = async () => {
     if (!selectedId || total === 0) return;
     setSaving(true);
     try {
       const res = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
         body: JSON.stringify({
           type: 'addBullpenSession',
-          date: new Date().toISOString().slice(0,10),
-          player: selectedId, strikes, balls: total - strikes, notes: ''
+          date: new Date().toISOString().slice(0, 10),
+          player: selectedId,
+          strikes,
+          balls: total - strikes,
+          notes: ''
         })
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'Save failed');
       let earned = null;
-      if (bestPrevPct === null || livePct > bestPrevPct) earned = { label: 'New Personal Best', icon: '🏆' };
-      else if (livePct >= 70) earned = { label: 'On Target', icon: '⭐' };
+      if (bestPrevPct === null || livePct > bestPrevPct) earned = {
+        label: 'New Personal Best',
+        icon: '🏆'
+      };else if (livePct >= 70) earned = {
+        label: 'On Target',
+        icon: '⭐'
+      };
       setBadge(earned);
       setDraft([]);
       await fetchData(apiUrl);
@@ -183,7 +219,6 @@ function App() {
       setSaving(false);
     }
   };
-
   const addPlayer = async () => {
     const name = newName.trim();
     if (!name) return;
@@ -191,12 +226,18 @@ function App() {
     try {
       const res = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ type: 'addPlayer', name })
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify({
+          type: 'addPlayer',
+          name
+        })
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'Add failed');
-      setNewName(''); setShowAdd(false);
+      setNewName('');
+      setShowAdd(false);
       await fetchData(apiUrl);
       setSelectedId(name);
     } catch (e) {
@@ -205,217 +246,488 @@ function App() {
       setSaving(false);
     }
   };
-
   const streak = useMemo(() => {
     let count = 0;
     for (let i = bullpenForPlayer.length - 1; i >= 0; i--) {
-      if (Math.round(bullpenForPlayer[i].strikePct*100) >= 60) count++; else break;
+      if (Math.round(bullpenForPlayer[i].strikePct * 100) >= 60) count++;else break;
     }
     return count;
   }, [bullpenForPlayer]);
-
-  const chartData = bullpenForPlayer.map(s => ({ pct: Math.round(s.strikePct*100) }));
-
+  const chartData = bullpenForPlayer.map(s => ({
+    pct: Math.round(s.strikePct * 100)
+  }));
   const leaderboard = useMemo(() => {
     if (!data) return [];
     return data.roster.map(p => {
-      const ps = data.bullpen.filter(s => s.player === p.name).sort((a,b) => a.date.localeCompare(b.date));
+      const ps = data.bullpen.filter(s => s.player === p.name).sort((a, b) => a.date.localeCompare(b.date));
       const last3 = ps.slice(-3);
-      const avg = last3.length ? Math.round(last3.reduce((sum,s) => sum + s.strikePct*100, 0) / last3.length) : null;
-      return { name: p.name, avg, count: ps.length };
-    }).sort((a,b) => (b.avg||0) - (a.avg||0));
+      const avg = last3.length ? Math.round(last3.reduce((sum, s) => sum + s.strikePct * 100, 0) / last3.length) : null;
+      return {
+        name: p.name,
+        avg,
+        count: ps.length
+      };
+    }).sort((a, b) => (b.avg || 0) - (a.avg || 0));
   }, [data]);
-
   const thisBlock = useMemo(() => {
     if (!data || !data.weeklyFocus.length) return null;
-    const today = new Date().toISOString().slice(0,10);
+    const today = new Date().toISOString().slice(0, 10);
     const started = data.weeklyFocus.filter(w => w.startDate && w.startDate <= today);
     return started.length ? started[started.length - 1] : data.weeklyFocus[0];
   }, [data]);
-
   if (!apiUrl) {
-    return (
-      <div style={{maxWidth:420, margin:'0 auto', padding:'40px 20px'}}>
-        <h1 className="disp" style={{fontSize:24, marginBottom:4}}>U11 PITCHING COACH APP</h1>
-        <p style={{fontSize:14, opacity:0.8, marginBottom:20}}>Paste your Apps Script Web App URL to connect to your team's Google Sheet.</p>
-        <div className="card">
-          <input className="textinput" style={{width:'100%', marginBottom:10}} placeholder="https://script.google.com/macros/s/.../exec"
-            value={urlInput} onChange={e => setUrlInput(e.target.value)} />
-          <button className="save-btn" style={{width:'100%', padding:10}} onClick={connect}>Connect</button>
-        </div>
-        <p style={{fontSize:12, opacity:0.6}}>See SETUP_INSTRUCTIONS.md for how to get this URL from your spreadsheet.</p>
-      </div>
-    );
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        maxWidth: 420,
+        margin: '0 auto',
+        padding: '40px 20px'
+      }
+    }, /*#__PURE__*/React.createElement("h1", {
+      className: "disp",
+      style: {
+        fontSize: 24,
+        marginBottom: 4
+      }
+    }, "U11 PITCHING COACH APP"), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: 14,
+        opacity: 0.8,
+        marginBottom: 20
+      }
+    }, "Paste your Apps Script Web App URL to connect to your team's Google Sheet."), /*#__PURE__*/React.createElement("div", {
+      className: "card"
+    }, /*#__PURE__*/React.createElement("input", {
+      className: "textinput",
+      style: {
+        width: '100%',
+        marginBottom: 10
+      },
+      placeholder: "https://script.google.com/macros/s/.../exec",
+      value: urlInput,
+      onChange: e => setUrlInput(e.target.value)
+    }), /*#__PURE__*/React.createElement("button", {
+      className: "save-btn",
+      style: {
+        width: '100%',
+        padding: 10
+      },
+      onClick: connect
+    }, "Connect")), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: 12,
+        opacity: 0.6
+      }
+    }, "See SETUP_INSTRUCTIONS.md for how to get this URL from your spreadsheet."));
   }
-
-  return (
-    <div style={{maxWidth:420, margin:'0 auto', padding:'20px 16px 40px'}}>
-      <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:4}}>
-        <h1 className="disp" style={{fontSize:22, margin:0}}>BULLPEN TRACKER</h1>
-        <button onClick={() => fetchData(apiUrl)} style={{background:'none', border:'none', color:'var(--chalk)', cursor:'pointer', fontSize:13}}>⟳ Refresh</button>
-      </div>
-      <p className="disp" style={{fontSize:11, opacity:0.7, marginBottom:16, textTransform:'uppercase', letterSpacing:'0.08em'}}>Connected to your Google Sheet</p>
-
-      {error && <div className="card" style={{background:'#F4D8D2'}}>{error}</div>}
-      {loading && !data && <p>Loading...</p>}
-
-      {data && (
-        <div className="card" style={{background:'var(--paper-dim)'}}>
-          <p className="disp" style={{fontSize:11, textTransform:'uppercase', opacity:0.7, marginBottom:6}}>Always on</p>
-          <p style={{fontSize:13, margin:0}}>Pre-pitch routine (sign → breathe → target → go) + the "Flip It" mistake reset after every bad pitch.</p>
-        </div>
-      )}
-
-      {data && thisBlock && (
-        <div className="card">
-          <p className="disp" style={{fontSize:11, textTransform:'uppercase', opacity:0.7, marginBottom:6}}>Current focus — Block {thisBlock.block}</p>
-          <p style={{fontSize:15, margin:'2px 0', fontWeight:600}}>{thisBlock.checkpoint}</p>
-          <p style={{fontSize:13, margin:'6px 0 2px', opacity:0.85}}><strong>Advance when:</strong> {thisBlock.advanceWhen}</p>
-          <p style={{fontSize:13, margin:'6px 0 2px', opacity:0.85}}><strong>Drills:</strong> {thisBlock.drills}</p>
-        </div>
-      )}
-
-      {data && (
-        <>
-          <div style={{display:'flex', gap:8, marginBottom:12}}>
-            <select value={selectedId} onChange={e => { setSelectedId(e.target.value); setDraft([]); }}
-              className="textinput" style={{flex:1, background:'var(--paper)', color:'var(--ink)', fontFamily:'Oswald,sans-serif', fontSize:15}}>
-              {data.roster.map(p => <option key={p.name} value={p.name}>{p.name}{p.jersey ? ' — #' + p.jersey : ''}</option>)}
-            </select>
-            {!showAdd && <button className="chip" onClick={() => setShowAdd(true)}>+ Add</button>}
-          </div>
-
-          {showAdd && (
-            <div style={{display:'flex', gap:8, marginBottom:12}}>
-              <input className="textinput" style={{flex:1}} placeholder="Player name" value={newName}
-                onChange={e => setNewName(e.target.value)} onKeyDown={e => { if (e.key==='Enter') addPlayer(); }}/>
-              <button className="save-btn" style={{padding:'0 16px'}} onClick={addPlayer} disabled={saving}>Add</button>
-            </div>
-          )}
-
-          {selectedId && (
-            <>
-              <div className="card">
-                <p className="disp" style={{fontSize:11, textTransform:'uppercase', opacity:0.7, marginBottom:8}}>Where {selectedId.split(' ')[0]}'s at in the program</p>
-
-                <div style={{display:'flex', flexWrap:'wrap', gap:8, marginBottom:10}}>
-                  {selectedRoster && selectedRoster.group && (
-                    <span className="mono" style={{fontSize:12, background:'var(--paper-dim)', padding:'3px 8px', borderRadius:6}}>Group {selectedRoster.group}</span>
-                  )}
-                  <span className="mono" style={{fontSize:12, background: changeupUnlocked ? 'var(--paper-dim)' : 'transparent', padding:'3px 8px', borderRadius:6, opacity: changeupUnlocked?1:0.5}}>
-                    {changeupUnlocked ? '🟢' : '⚪'} Changeup {changeupUnlocked ? 'unlocked' : 'not yet'}
-                  </span>
-                  <span className="mono" style={{fontSize:12, background: pickoffCleared ? 'var(--paper-dim)' : 'transparent', padding:'3px 8px', borderRadius:6, opacity: pickoffCleared?1:0.5}}>
-                    {pickoffCleared ? '🟢' : '⚪'} Pickoff {pickoffCleared ? 'cleared' : 'not yet'}
-                  </span>
-                </div>
-
-                {thisBlock && (
-                  <p style={{fontSize:13, margin:'4px 0'}}><strong>Team mechanics focus:</strong> {thisBlock.checkpoint} (Block {thisBlock.block})</p>
-                )}
-
-                {currentBuildupWeek && (
-                  <p style={{fontSize:13, margin:'4px 0'}}>
-                    <strong>Buildup pacing (Week {currentBuildupWeek.week}):</strong> target {currentBuildupWeek.targetPitches} pitches
-                    {bullpenForPlayer.length > 0 && (
-                      <> · last logged {bullpenForPlayer[bullpenForPlayer.length-1].totalPitches}</>
-                    )}
-                    {currentBuildupWeek.liveGames && currentBuildupWeek.liveGames !== '—' && (
-                      <><br/><span style={{opacity:0.8}}>⚾ {currentBuildupWeek.liveGames}</span></>
-                    )}
-                  </p>
-                )}
-
-                {springRecord && (
-                  <p style={{fontSize:13, margin:'6px 0 0', opacity:0.85}}>
-                    <strong>Spring baseline:</strong> {springRecord.read}
-                  </p>
-                )}
-
-                <div style={{marginTop:10, paddingTop:10, borderTop:'1px solid rgba(32,27,18,0.15)'}}>
-                  <p className="disp" style={{fontSize:10, textTransform:'uppercase', opacity:0.6, marginBottom:4}}>This fall — real games (GameChanger)</p>
-                  {fallGameRecord ? (
-                    <p style={{fontSize:13, margin:0}}>
-                      {fallGameRecord.ip} IP · {fallGameRecord.pitches} pitches · {fallGameRecord.sPct} strikes · ERA {fallGameRecord.era}
-                      {fallGameRecord.read && <><br/><span style={{opacity:0.8}}>{fallGameRecord.read}</span></>}
-                    </p>
-                  ) : (
-                    <p style={{fontSize:13, margin:0, opacity:0.6}}>No games logged yet this fall.</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="scoreboard">
-                {badge && <div className="badge">{badge.icon} {badge.label}</div>}
-                <p className="disp" style={{fontSize:13, textTransform:'uppercase', opacity:0.8, marginBottom:4}}>{selectedId}'s bullpen</p>
-                <div style={{display:'flex', alignItems:'flex-end', gap:8}}>
-                  <span className="mono" style={{fontSize:56, fontWeight:700, color:'var(--brass-bright)', lineHeight:1}}>{livePct}</span>
-                  <span className="mono" style={{fontSize:22, opacity:0.7, marginBottom:6}}>%</span>
-                </div>
-                <p className="mono" style={{fontSize:13, opacity:0.8, margin:'4px 0 0'}}>S {strikes} · B {total-strikes} · {total} pitches</p>
-                {streak > 0 && <p className="disp" style={{fontSize:12, marginTop:8, color:'var(--brass-bright)'}}>🔥 {streak} session{streak>1?'s':''} at 60%+</p>}
-              </div>
-
-              <div className="card">
-                <p className="disp" style={{fontSize:11, textTransform:'uppercase', opacity:0.7, marginBottom:8}}>Tap the zone hit, or log a miss</p>
-                <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:6, aspectRatio:'3/2', marginBottom:12}}>
-                  {ZONES.map(z => <button key={z} className="zone" onClick={() => logPitch('strike', z)}></button>)}
-                </div>
-                <button className="ball-btn" onClick={() => logPitch('ball')}>BALL / MISS</button>
-                <div style={{display:'flex', gap:8, marginTop:12}}>
-                  <button className="btn-row-item" style={{background:'transparent', border:'1px solid rgba(245,241,230,0.3)', color:'var(--chalk)'}}
-                    onClick={undo} disabled={total===0}>↩ Undo</button>
-                  <button className="btn-row-item save-btn" onClick={saveSession} disabled={total===0 || saving}>
-                    {saving ? 'Saving...' : '💾 Save session'}
-                  </button>
-                </div>
-              </div>
-
-              {bullpenForPlayer.length > 0 && (
-                <div className="card">
-                  <p className="disp" style={{fontSize:11, textTransform:'uppercase', opacity:0.7, marginBottom:8}}>📈 Bullpen trend across sessions</p>
-                  <TrendChart data={chartData} />
-                  <div style={{marginTop:8, maxHeight:100, overflowY:'auto'}}>
-                    {[...bullpenForPlayer].reverse().map((s, i) => {
-                      const idx = bullpenForPlayer.length - i;
-                      const prev = bullpenForPlayer[bullpenForPlayer.length - i - 2];
-                      const pct = Math.round(s.strikePct*100);
-                      const delta = prev ? pct - Math.round(prev.strikePct*100) : null;
-                      return (
-                        <div key={s.date+i} className="mono" style={{display:'flex', justifyContent:'space-between', fontSize:12, opacity:0.8, padding:'2px 0'}}>
-                          <span>#{idx} · {s.date}</span>
-                          <span>{pct}% {delta !== null && (delta >= 0 ? `▲${delta}` : `▼${Math.abs(delta)}`)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          {leaderboard.length > 0 && (
-            <div className="card">
-              <p className="disp" style={{fontSize:11, textTransform:'uppercase', opacity:0.7, marginBottom:10}}>🏆 Team leaderboard · avg last 3</p>
-              {leaderboard.map((p, i) => (
-                <div key={p.name} style={{display:'flex', alignItems:'center', gap:8, marginBottom:6}}>
-                  <span className="mono" style={{fontSize:12, width:16, opacity:0.6}}>{i+1}</span>
-                  <span style={{fontSize:13, flex:1}}>{p.name}</span>
-                  <div style={{flex:1, height:8, borderRadius:99, background:'var(--paper-dim)', overflow:'hidden'}}>
-                    <div style={{height:'100%', width:(p.avg||0)+'%', background:'var(--brick)'}}></div>
-                  </div>
-                  <span className="mono" style={{fontSize:12, width:36, textAlign:'right'}}>{p.avg !== null ? p.avg+'%' : '—'}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 420,
+      margin: '0 auto',
+      padding: '20px 16px 40px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'baseline',
+      marginBottom: 4
+    }
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "disp",
+    style: {
+      fontSize: 22,
+      margin: 0
+    }
+  }, "BULLPEN TRACKER"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => fetchData(apiUrl),
+    style: {
+      background: 'none',
+      border: 'none',
+      color: 'var(--chalk)',
+      cursor: 'pointer',
+      fontSize: 13
+    }
+  }, "⟳ Refresh")), /*#__PURE__*/React.createElement("p", {
+    className: "disp",
+    style: {
+      fontSize: 11,
+      opacity: 0.7,
+      marginBottom: 16,
+      textTransform: 'uppercase',
+      letterSpacing: '0.08em'
+    }
+  }, "Connected to your Google Sheet"), error && /*#__PURE__*/React.createElement("div", {
+    className: "card",
+    style: {
+      background: '#F4D8D2'
+    }
+  }, error), loading && !data && /*#__PURE__*/React.createElement("p", null, "Loading..."), data && /*#__PURE__*/React.createElement("div", {
+    className: "card",
+    style: {
+      background: 'var(--paper-dim)'
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "disp",
+    style: {
+      fontSize: 11,
+      textTransform: 'uppercase',
+      opacity: 0.7,
+      marginBottom: 6
+    }
+  }, "Always on"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      margin: 0
+    }
+  }, "Pre-pitch routine (sign → breathe → target → go) + the \"Flip It\" mistake reset after every bad pitch.")), data && thisBlock && /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "disp",
+    style: {
+      fontSize: 11,
+      textTransform: 'uppercase',
+      opacity: 0.7,
+      marginBottom: 6
+    }
+  }, "Current focus — Block ", thisBlock.block), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 15,
+      margin: '2px 0',
+      fontWeight: 600
+    }
+  }, thisBlock.checkpoint), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      margin: '6px 0 2px',
+      opacity: 0.85
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Advance when:"), " ", thisBlock.advanceWhen), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      margin: '6px 0 2px',
+      opacity: 0.85
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Drills:"), " ", thisBlock.drills)), data && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 8,
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("select", {
+    value: selectedId,
+    onChange: e => {
+      setSelectedId(e.target.value);
+      setDraft([]);
+    },
+    className: "textinput",
+    style: {
+      flex: 1,
+      background: 'var(--paper)',
+      color: 'var(--ink)',
+      fontFamily: 'Oswald,sans-serif',
+      fontSize: 15
+    }
+  }, data.roster.map(p => /*#__PURE__*/React.createElement("option", {
+    key: p.name,
+    value: p.name
+  }, p.name, p.jersey ? ' — #' + p.jersey : ''))), !showAdd && /*#__PURE__*/React.createElement("button", {
+    className: "chip",
+    onClick: () => setShowAdd(true)
+  }, "+ Add")), showAdd && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 8,
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    className: "textinput",
+    style: {
+      flex: 1
+    },
+    placeholder: "Player name",
+    value: newName,
+    onChange: e => setNewName(e.target.value),
+    onKeyDown: e => {
+      if (e.key === 'Enter') addPlayer();
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    className: "save-btn",
+    style: {
+      padding: '0 16px'
+    },
+    onClick: addPlayer,
+    disabled: saving
+  }, "Add")), selectedId && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "disp",
+    style: {
+      fontSize: 11,
+      textTransform: 'uppercase',
+      opacity: 0.7,
+      marginBottom: 8
+    }
+  }, "Where ", selectedId.split(' ')[0], "'s at in the program"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 10
+    }
+  }, selectedRoster && selectedRoster.group && /*#__PURE__*/React.createElement("span", {
+    className: "mono",
+    style: {
+      fontSize: 12,
+      background: 'var(--paper-dim)',
+      padding: '3px 8px',
+      borderRadius: 6
+    }
+  }, "Group ", selectedRoster.group), /*#__PURE__*/React.createElement("span", {
+    className: "mono",
+    style: {
+      fontSize: 12,
+      background: changeupUnlocked ? 'var(--paper-dim)' : 'transparent',
+      padding: '3px 8px',
+      borderRadius: 6,
+      opacity: changeupUnlocked ? 1 : 0.5
+    }
+  }, changeupUnlocked ? '🟢' : '⚪', " Changeup ", changeupUnlocked ? 'unlocked' : 'not yet'), /*#__PURE__*/React.createElement("span", {
+    className: "mono",
+    style: {
+      fontSize: 12,
+      background: pickoffCleared ? 'var(--paper-dim)' : 'transparent',
+      padding: '3px 8px',
+      borderRadius: 6,
+      opacity: pickoffCleared ? 1 : 0.5
+    }
+  }, pickoffCleared ? '🟢' : '⚪', " Pickoff ", pickoffCleared ? 'cleared' : 'not yet')), thisBlock && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      margin: '4px 0'
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Team mechanics focus:"), " ", thisBlock.checkpoint, " (Block ", thisBlock.block, ")"), currentBuildupWeek && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      margin: '4px 0'
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Buildup pacing (Week ", currentBuildupWeek.week, "):"), " target ", currentBuildupWeek.targetPitches, " pitches", bullpenForPlayer.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, " · last logged ", bullpenForPlayer[bullpenForPlayer.length - 1].totalPitches), currentBuildupWeek.liveGames && currentBuildupWeek.liveGames !== '—' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
+    style: {
+      opacity: 0.8
+    }
+  }, "⚾ ", currentBuildupWeek.liveGames))), springRecord && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      margin: '6px 0 0',
+      opacity: 0.85
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Spring baseline:"), " ", springRecord.read), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 10,
+      paddingTop: 10,
+      borderTop: '1px solid rgba(32,27,18,0.15)'
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "disp",
+    style: {
+      fontSize: 10,
+      textTransform: 'uppercase',
+      opacity: 0.6,
+      marginBottom: 4
+    }
+  }, "This fall — real games (GameChanger)"), fallGameRecord ? /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      margin: 0
+    }
+  }, fallGameRecord.ip, " IP · ", fallGameRecord.pitches, " pitches · ", fallGameRecord.sPct, " strikes · ERA ", fallGameRecord.era, fallGameRecord.read && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
+    style: {
+      opacity: 0.8
+    }
+  }, fallGameRecord.read))) : /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      margin: 0,
+      opacity: 0.6
+    }
+  }, "No games logged yet this fall."))), /*#__PURE__*/React.createElement("div", {
+    className: "scoreboard"
+  }, badge && /*#__PURE__*/React.createElement("div", {
+    className: "badge"
+  }, badge.icon, " ", badge.label), /*#__PURE__*/React.createElement("p", {
+    className: "disp",
+    style: {
+      fontSize: 13,
+      textTransform: 'uppercase',
+      opacity: 0.8,
+      marginBottom: 4
+    }
+  }, selectedId, "'s bullpen"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'flex-end',
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "mono",
+    style: {
+      fontSize: 56,
+      fontWeight: 700,
+      color: 'var(--brass-bright)',
+      lineHeight: 1
+    }
+  }, livePct), /*#__PURE__*/React.createElement("span", {
+    className: "mono",
+    style: {
+      fontSize: 22,
+      opacity: 0.7,
+      marginBottom: 6
+    }
+  }, "%")), /*#__PURE__*/React.createElement("p", {
+    className: "mono",
+    style: {
+      fontSize: 13,
+      opacity: 0.8,
+      margin: '4px 0 0'
+    }
+  }, "S ", strikes, " · B ", total - strikes, " · ", total, " pitches"), streak > 0 && /*#__PURE__*/React.createElement("p", {
+    className: "disp",
+    style: {
+      fontSize: 12,
+      marginTop: 8,
+      color: 'var(--brass-bright)'
+    }
+  }, "🔥 ", streak, " session", streak > 1 ? 's' : '', " at 60%+")), /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "disp",
+    style: {
+      fontSize: 11,
+      textTransform: 'uppercase',
+      opacity: 0.7,
+      marginBottom: 8
+    }
+  }, "Tap the zone hit, or log a miss"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(3,1fr)',
+      gap: 6,
+      aspectRatio: '3/2',
+      marginBottom: 12
+    }
+  }, ZONES.map(z => /*#__PURE__*/React.createElement("button", {
+    key: z,
+    className: "zone",
+    onClick: () => logPitch('strike', z)
+  }))), /*#__PURE__*/React.createElement("button", {
+    className: "ball-btn",
+    onClick: () => logPitch('ball')
+  }, "BALL / MISS"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 8,
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn-row-item",
+    style: {
+      background: 'transparent',
+      border: '1px solid rgba(245,241,230,0.3)',
+      color: 'var(--chalk)'
+    },
+    onClick: undo,
+    disabled: total === 0
+  }, "↩ Undo"), /*#__PURE__*/React.createElement("button", {
+    className: "btn-row-item save-btn",
+    onClick: saveSession,
+    disabled: total === 0 || saving
+  }, saving ? 'Saving...' : '💾 Save session'))), bullpenForPlayer.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "disp",
+    style: {
+      fontSize: 11,
+      textTransform: 'uppercase',
+      opacity: 0.7,
+      marginBottom: 8
+    }
+  }, "📈 Bullpen trend across sessions"), /*#__PURE__*/React.createElement(TrendChart, {
+    data: chartData
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 8,
+      maxHeight: 100,
+      overflowY: 'auto'
+    }
+  }, [...bullpenForPlayer].reverse().map((s, i) => {
+    const idx = bullpenForPlayer.length - i;
+    const prev = bullpenForPlayer[bullpenForPlayer.length - i - 2];
+    const pct = Math.round(s.strikePct * 100);
+    const delta = prev ? pct - Math.round(prev.strikePct * 100) : null;
+    return /*#__PURE__*/React.createElement("div", {
+      key: s.date + i,
+      className: "mono",
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        fontSize: 12,
+        opacity: 0.8,
+        padding: '2px 0'
+      }
+    }, /*#__PURE__*/React.createElement("span", null, "#", idx, " · ", s.date), /*#__PURE__*/React.createElement("span", null, pct, "% ", delta !== null && (delta >= 0 ? `▲${delta}` : `▼${Math.abs(delta)}`)));
+  })))), leaderboard.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "disp",
+    style: {
+      fontSize: 11,
+      textTransform: 'uppercase',
+      opacity: 0.7,
+      marginBottom: 10
+    }
+  }, "🏆 Team leaderboard · avg last 3"), leaderboard.map((p, i) => /*#__PURE__*/React.createElement("div", {
+    key: p.name,
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 6
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "mono",
+    style: {
+      fontSize: 12,
+      width: 16,
+      opacity: 0.6
+    }
+  }, i + 1), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      flex: 1
+    }
+  }, p.name), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      height: 8,
+      borderRadius: 99,
+      background: 'var(--paper-dim)',
+      overflow: 'hidden'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: '100%',
+      width: (p.avg || 0) + '%',
+      background: 'var(--brick)'
+    }
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "mono",
+    style: {
+      fontSize: 12,
+      width: 36,
+      textAlign: 'right'
+    }
+  }, p.avg !== null ? p.avg + '%' : '—'))))));
 }
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
 </script>
 </body>
 </html>
