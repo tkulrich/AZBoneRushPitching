@@ -442,10 +442,9 @@ function App() {
   const [error, setError] = useState('');
   const [selectedId, setSelectedId] = useState('');
   const [draft, setDraft] = useState([]);
-  const [newName, setNewName] = useState('');
-  const [showAdd, setShowAdd] = useState(false);
   const [videoLink, setVideoLink] = useState('');
   const [showVideoInput, setShowVideoInput] = useState(false);
+  const [advancingBlock, setAdvancingBlock] = useState(false);
   const [badge, setBadge] = useState(null);
   const [saving, setSaving] = useState(false);
   const fetchData = async url => {
@@ -575,33 +574,6 @@ function App() {
       setSaving(false);
     }
   };
-  const addPlayer = async () => {
-    const name = newName.trim();
-    if (!name) return;
-    setSaving(true);
-    try {
-      const res = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8'
-        },
-        body: JSON.stringify({
-          type: 'addPlayer',
-          name
-        })
-      });
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || 'Add failed');
-      setNewName('');
-      setShowAdd(false);
-      await fetchData(apiUrl);
-      setSelectedId(name);
-    } catch (e) {
-      setError('Could not add that player. Try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
   const streak = useMemo(() => {
     let count = 0;
     for (let i = bullpenForPlayer.length - 1; i >= 0; i--) {
@@ -631,6 +603,34 @@ function App() {
     const started = data.weeklyFocus.filter(w => w.startDate && w.startDate <= today);
     return started.length ? started[started.length - 1] : data.weeklyFocus[0];
   }, [data]);
+  const nextBlockExists = useMemo(() => {
+    if (!data || !thisBlock) return false;
+    return data.weeklyFocus.some(w => w.block === thisBlock.block + 1);
+  }, [data, thisBlock]);
+  const advanceBlock = async () => {
+    if (!thisBlock || !nextBlockExists) return;
+    if (!window.confirm(`Move the whole team from Block ${thisBlock.block} to Block ${thisBlock.block + 1}? This changes what everyone gets cued on.`)) return;
+    setAdvancingBlock(true);
+    try {
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify({
+          type: 'advanceBlock',
+          nextBlock: thisBlock.block + 1
+        })
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'Advance failed');
+      await fetchData(apiUrl);
+    } catch (e) {
+      setError('Could not advance the block. Try again.');
+    } finally {
+      setAdvancingBlock(false);
+    }
+  };
   if (!apiUrl) {
     return /*#__PURE__*/React.createElement("div", {
       style: {
@@ -781,7 +781,22 @@ function App() {
       margin: '6px 0 2px',
       opacity: 0.85
     }
-  }, /*#__PURE__*/React.createElement("strong", null, "Drills:"), " ", thisBlock.drills)), data && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("strong", null, "Drills:"), " ", thisBlock.drills), nextBlockExists ? /*#__PURE__*/React.createElement("button", {
+    className: "save-btn",
+    style: {
+      marginTop: 10,
+      padding: '8px 14px',
+      fontSize: 13
+    },
+    onClick: advanceBlock,
+    disabled: advancingBlock
+  }, advancingBlock ? 'Advancing...' : `→ Advance whole team to Block ${thisBlock.block + 1}`) : /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12,
+      opacity: 0.6,
+      marginTop: 8
+    }
+  }, "Final block — no further block to advance to.")), data && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       gap: 8,
@@ -804,34 +819,7 @@ function App() {
   }, data.roster.map(p => /*#__PURE__*/React.createElement("option", {
     key: p.name,
     value: p.name
-  }, p.name, p.jersey ? ' — #' + p.jersey : ''))), !showAdd && /*#__PURE__*/React.createElement("button", {
-    className: "chip",
-    onClick: () => setShowAdd(true)
-  }, "+ Add")), showAdd && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      gap: 8,
-      marginBottom: 12
-    }
-  }, /*#__PURE__*/React.createElement("input", {
-    className: "textinput",
-    style: {
-      flex: 1
-    },
-    placeholder: "Player name",
-    value: newName,
-    onChange: e => setNewName(e.target.value),
-    onKeyDown: e => {
-      if (e.key === 'Enter') addPlayer();
-    }
-  }), /*#__PURE__*/React.createElement("button", {
-    className: "save-btn",
-    style: {
-      padding: '0 16px'
-    },
-    onClick: addPlayer,
-    disabled: saving
-  }, "Add")), selectedId && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, p.name, p.jersey ? ' — #' + p.jersey : '')))), selectedId && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "card"
   }, /*#__PURE__*/React.createElement("p", {
     className: "disp",
@@ -885,7 +873,16 @@ function App() {
       fontSize: 13,
       margin: '4px 0'
     }
-  }, /*#__PURE__*/React.createElement("strong", null, "Team mechanics focus:"), " ", thisBlock.checkpoint, " (Block ", thisBlock.block, ")"), currentBuildupWeek && /*#__PURE__*/React.createElement("p", {
+  }, /*#__PURE__*/React.createElement("strong", null, "Team mechanics focus:"), " ", thisBlock.checkpoint, " (Block ", thisBlock.block, ")"), selectedRoster && selectedRoster.struggles && selectedRoster.struggles.length > 0 && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      margin: '4px 0',
+      background: 'rgba(11,12,12,0.08)',
+      borderLeft: '3px solid var(--ink)',
+      padding: '6px 8px',
+      borderRadius: 4
+    }
+  }, "⚠️ ", /*#__PURE__*/React.createElement("strong", null, "Still working on:"), " ", selectedRoster.struggles.join(', ')), currentBuildupWeek && /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 13,
       margin: '4px 0'
