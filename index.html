@@ -456,8 +456,9 @@ function App() {
   const bestPrevPct = bullpenForPlayer.length ? Math.max(...bullpenForPlayer.map(s => Math.round(s.strikePct * 100))) : null;
   const changeupUnlocked = useMemo(() => {
     if (bullpenForPlayer.length < 3) return false;
-    const avg = bullpenForPlayer.reduce((sum, s) => sum + s.strikePct, 0) / bullpenForPlayer.length;
-    return avg >= 0.6;
+    // Requires the 3 most recent sessions to EACH be at 60%+ strikes — a streak, not an average.
+    const lastThree = bullpenForPlayer.slice(-3);
+    return lastThree.every(s => s.strikePct >= 0.6);
   }, [bullpenForPlayer]);
   const pickoffCleared = useMemo(() => {
     if (!data || !data.pickoffStatus) return false;
@@ -801,7 +802,13 @@ function App() {
       borderRadius: 6,
       opacity: pickoffCleared ? 1 : 0.5
     }
-  }, pickoffCleared ? '🟢' : '⚪', " Pickoff ", pickoffCleared ? 'cleared' : 'not yet')), thisBlock && /*#__PURE__*/React.createElement("p", {
+  }, pickoffCleared ? '🟢' : '⚪', " Pickoff ", pickoffCleared ? 'cleared' : 'not yet')), !changeupUnlocked && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11,
+      opacity: 0.6,
+      margin: '0 0 8px'
+    }
+  }, "Fastballs only until 3 straight bullpens land 60%+ strikes."), thisBlock && /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 13,
       margin: '4px 0'
