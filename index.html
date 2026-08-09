@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Bone Rush Pitching Coach App</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root {
     --teal-deep:#0A3D3A; --teal:#0F5C57; --teal-bright:#2FC2B4;
@@ -24,18 +24,18 @@
     background-image:
       radial-gradient(circle at 15% -10%, rgba(47,194,180,0.18) 0%, transparent 45%),
       radial-gradient(circle at 100% 110%, rgba(0,0,0,0.35) 0%, transparent 55%);
-    font-family:'Inter',sans-serif; color: var(--chalk); min-height:100vh;
+    font-family:'Barlow',sans-serif; color: var(--chalk); min-height:100vh;
   }
-  .disp { font-family:'Anton',sans-serif; letter-spacing:0.03em; font-weight:400; }
-  .mono { font-family:'Space Mono',monospace; }
+  .disp { font-family:'Barlow',sans-serif; letter-spacing:0.02em; font-weight:800; }
+  .mono { font-family:'Barlow',sans-serif; font-weight:700; font-variant-numeric: tabular-nums; }
   .card { background: var(--bone); color: var(--ink); border-radius:10px; padding:16px; margin-bottom:16px; border:1px solid rgba(11,12,12,0.08); }
-  .chip { font-family:'Anton',sans-serif; background: var(--black-soft); border:1px solid rgba(246,243,233,0.2);
+  .chip { font-family:'Barlow',sans-serif; font-weight:800; background: var(--black-soft); border:1px solid rgba(246,243,233,0.2);
     color: var(--chalk); padding:7px 14px; border-radius:999px; font-size:14px; white-space:nowrap; cursor:pointer; letter-spacing:0.02em; }
   .chip.active { background: var(--teal-bright); color: var(--black); border-color: var(--teal-bright); }
   .zone { border:1.5px solid rgba(18,16,12,0.35); background: rgba(18,16,12,0.04); border-radius:6px; cursor:pointer; }
   .zone:active { background: var(--teal-bright); border-color: var(--teal-bright); }
   .ball-btn { background: var(--black); color: var(--chalk); width:100%; padding:12px; border:none; border-radius:8px;
-    font-weight:400; font-family:'Anton',sans-serif; letter-spacing:0.04em; cursor:pointer; font-size:16px; }
+    font-family:'Barlow',sans-serif; font-weight:800; letter-spacing:0.04em; cursor:pointer; font-size:16px; }
   .ball-btn:active { background: var(--black-soft); }
   .save-btn { background: var(--teal-bright); color: var(--black); border:none; border-radius:8px; font-weight:700; cursor:pointer; }
   .save-btn:disabled { opacity:0.35; cursor:not-allowed; }
@@ -47,10 +47,10 @@
     content:''; position:absolute; right:-30px; top:-30px; width:120px; height:120px; border-radius:50%;
     border: 10px solid rgba(47,194,180,0.12); pointer-events:none;
   }
-  .badge { background: var(--teal-bright); color: var(--black); font-family:'Anton',sans-serif; position:absolute; top:10px; right:10px;
+  .badge { background: var(--teal-bright); color: var(--black); font-family:'Barlow',sans-serif; font-weight:800; position:absolute; top:10px; right:10px;
     padding:4px 10px; border-radius:999px; font-size:11px; font-weight:400; text-transform:uppercase; letter-spacing:0.03em; }
   .logo-card { background: var(--white); border-radius:8px; padding:10px 16px; display:inline-flex; align-items:center; margin-bottom:14px; }
-  input, .textinput { font-family:'Inter',sans-serif; border:none; border-radius:8px; padding:10px; font-size:14px; }
+  input, .textinput { font-family:'Barlow',sans-serif; border:none; border-radius:8px; padding:10px; font-size:14px; }
   a { color: var(--teal-bright); }
 </style>
 </head>
@@ -466,6 +466,18 @@ function App() {
   const strikes = draft.filter(d => d.result === 'strike').length;
   const total = draft.length;
   const livePct = total ? Math.round(strikes / total * 100) : 0;
+  const missBreakdown = useMemo(() => {
+    const b = {
+      left: 0,
+      right: 0,
+      high: 0,
+      low: 0
+    };
+    draft.filter(d => d.result === 'ball').forEach(d => {
+      if (d.zone && b[d.zone] !== undefined) b[d.zone]++;
+    });
+    return b;
+  }, [draft]);
   const logPitch = (result, zone) => setDraft([...draft, {
     result,
     zone: zone || null
@@ -505,6 +517,12 @@ function App() {
     if (!selectedId || total === 0) return;
     setSaving(true);
     try {
+      const missParts = [];
+      if (missBreakdown.left) missParts.push(`${missBreakdown.left} left`);
+      if (missBreakdown.right) missParts.push(`${missBreakdown.right} right`);
+      if (missBreakdown.high) missParts.push(`${missBreakdown.high} high`);
+      if (missBreakdown.low) missParts.push(`${missBreakdown.low} low`);
+      const notes = missParts.length ? `Misses: ${missParts.join(', ')}` : '';
       const res = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -516,7 +534,7 @@ function App() {
           player: selectedId,
           strikes,
           balls: total - strikes,
-          notes: ''
+          notes
         })
       });
       const json = await res.json();
@@ -962,10 +980,32 @@ function App() {
     key: z,
     className: "zone",
     onClick: () => logPitch('strike', z)
-  }))), /*#__PURE__*/React.createElement("button", {
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2,1fr)',
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement("button", {
     className: "ball-btn",
-    onClick: () => logPitch('ball')
-  }, "BALL / MISS"), /*#__PURE__*/React.createElement("div", {
+    onClick: () => logPitch('ball', 'left')
+  }, "← LEFT"), /*#__PURE__*/React.createElement("button", {
+    className: "ball-btn",
+    onClick: () => logPitch('ball', 'right')
+  }, "RIGHT →"), /*#__PURE__*/React.createElement("button", {
+    className: "ball-btn",
+    onClick: () => logPitch('ball', 'high')
+  }, "↑ HIGH"), /*#__PURE__*/React.createElement("button", {
+    className: "ball-btn",
+    onClick: () => logPitch('ball', 'low')
+  }, "↓ LOW")), missBreakdown.left + missBreakdown.right + missBreakdown.high + missBreakdown.low > 0 && /*#__PURE__*/React.createElement("p", {
+    className: "mono",
+    style: {
+      fontSize: 11,
+      opacity: 0.65,
+      margin: '6px 0 0'
+    }
+  }, "Misses — L", missBreakdown.left, " · R", missBreakdown.right, " · H", missBreakdown.high, " · Lo", missBreakdown.low), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       gap: 8,
