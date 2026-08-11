@@ -380,6 +380,7 @@ const {
   useMemo
 } = React;
 const ZONES = ['up-in', 'up-away', 'low-in', 'low-away'];
+const QUICK_TAGS = ['Off-balance', 'Elbow drop', 'Flying open', 'Arm wrapping', 'Rushing / upright', 'Short finish', 'In his head', 'Arm sore ⚠️', 'Good rep'];
 function getApiUrl() {
   const params = new URLSearchParams(window.location.search);
   return params.get('api') || '';
@@ -444,6 +445,7 @@ function App() {
   const [draft, setDraft] = useState([]);
   const [videoLink, setVideoLink] = useState('');
   const [showVideoInput, setShowVideoInput] = useState(false);
+  const [quickTags, setQuickTags] = useState([]);
   const [advancingBlock, setAdvancingBlock] = useState(false);
   const [badge, setBadge] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -527,6 +529,9 @@ function App() {
     if (!data || !data.fallGameStats) return null;
     return data.fallGameStats.find(p => p.player === selectedId) || null;
   }, [data, selectedId]);
+  const toggleTag = tag => {
+    setQuickTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
   const saveSession = async () => {
     if (!selectedId || total === 0) return;
     setSaving(true);
@@ -536,7 +541,10 @@ function App() {
       if (missBreakdown.right) missParts.push(`${missBreakdown.right} right`);
       if (missBreakdown.high) missParts.push(`${missBreakdown.high} high`);
       if (missBreakdown.low) missParts.push(`${missBreakdown.low} low`);
-      const notes = missParts.length ? `Misses: ${missParts.join(', ')}` : '';
+      const noteParts = [];
+      if (missParts.length) noteParts.push(`Misses: ${missParts.join(', ')}`);
+      if (quickTags.length) noteParts.push(`Tags: ${quickTags.join(', ')}`);
+      const notes = noteParts.join(' | ');
       const res = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -566,6 +574,7 @@ function App() {
       setDraft([]);
       setVideoLink('');
       setShowVideoInput(false);
+      setQuickTags([]);
       await fetchData(apiUrl);
       setTimeout(() => setBadge(null), 4000);
     } catch (e) {
@@ -882,7 +891,20 @@ function App() {
       padding: '6px 8px',
       borderRadius: 4
     }
-  }, "⚠️ ", /*#__PURE__*/React.createElement("strong", null, "Still working on:"), " ", selectedRoster.struggles.join(', ')), currentBuildupWeek && /*#__PURE__*/React.createElement("p", {
+  }, "⚠️ ", /*#__PURE__*/React.createElement("strong", null, "Still working on:"), " ", selectedRoster.struggles.join(', ')), selectedRoster && selectedRoster.pitches ? /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      margin: '4px 0',
+      opacity: 0.85
+    }
+  }, "🎯 ", /*#__PURE__*/React.createElement("strong", null, "Pitches:"), " ", selectedRoster.pitches) : /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      margin: '4px 0',
+      opacity: 0.6,
+      fontStyle: 'italic'
+    }
+  }, "❓ Not sure what ", selectedId ? selectedId.split(' ')[0] : 'he', "'s throwing yet — worth asking, add it to the Roster tab."), currentBuildupWeek && /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 13,
       margin: '4px 0'
@@ -1047,7 +1069,27 @@ function App() {
       opacity: 0.65,
       margin: '6px 0 0'
     }
-  }, "Misses — L", missBreakdown.left, " · R", missBreakdown.right, " · H", missBreakdown.high, " · Lo", missBreakdown.low), !showVideoInput ? /*#__PURE__*/React.createElement("button", {
+  }, "Misses — L", missBreakdown.left, " · R", missBreakdown.right, " · H", missBreakdown.high, " · Lo", missBreakdown.low), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginTop: 10
+    }
+  }, QUICK_TAGS.map(tag => /*#__PURE__*/React.createElement("button", {
+    key: tag,
+    onClick: () => toggleTag(tag),
+    style: {
+      fontSize: 11,
+      padding: '5px 10px',
+      borderRadius: 999,
+      cursor: 'pointer',
+      border: quickTags.includes(tag) ? '1.5px solid var(--ink)' : '1.5px solid rgba(18,16,12,0.25)',
+      background: quickTags.includes(tag) ? 'var(--ink)' : 'transparent',
+      color: quickTags.includes(tag) ? 'var(--bone)' : 'var(--ink)',
+      fontWeight: quickTags.includes(tag) ? 700 : 400
+    }
+  }, tag))), !showVideoInput ? /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowVideoInput(true),
     style: {
       background: 'none',
