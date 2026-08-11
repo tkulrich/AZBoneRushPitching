@@ -446,7 +446,6 @@ function App() {
   const [videoLink, setVideoLink] = useState('');
   const [showVideoInput, setShowVideoInput] = useState(false);
   const [quickTags, setQuickTags] = useState([]);
-  const [advancingBlock, setAdvancingBlock] = useState(false);
   const [badge, setBadge] = useState(null);
   const [saving, setSaving] = useState(false);
   const fetchData = async url => {
@@ -557,7 +556,11 @@ function App() {
           strikes,
           balls: total - strikes,
           notes,
-          videoLink: videoLink.trim()
+          videoLink: videoLink.trim(),
+          missLeft: missBreakdown.left,
+          missRight: missBreakdown.right,
+          missHigh: missBreakdown.high,
+          missLow: missBreakdown.low
         })
       });
       const json = await res.json();
@@ -606,40 +609,124 @@ function App() {
       };
     }).sort((a, b) => (b.avg || 0) - (a.avg || 0));
   }, [data]);
-  const thisBlock = useMemo(() => {
-    if (!data || !data.weeklyFocus.length) return null;
-    const today = new Date().toISOString().slice(0, 10);
-    const started = data.weeklyFocus.filter(w => w.startDate && w.startDate <= today);
-    return started.length ? started[started.length - 1] : data.weeklyFocus[0];
-  }, [data]);
-  const nextBlockExists = useMemo(() => {
-    if (!data || !thisBlock) return false;
-    return data.weeklyFocus.some(w => w.block === thisBlock.block + 1);
-  }, [data, thisBlock]);
-  const advanceBlock = async () => {
-    if (!thisBlock || !nextBlockExists) return;
-    if (!window.confirm(`Move the whole team from Block ${thisBlock.block} to Block ${thisBlock.block + 1}? This changes what everyone gets cued on.`)) return;
-    setAdvancingBlock(true);
-    try {
-      const res = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8'
-        },
-        body: JSON.stringify({
-          type: 'advanceBlock',
-          nextBlock: thisBlock.block + 1
-        })
-      });
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || 'Advance failed');
-      await fetchData(apiUrl);
-    } catch (e) {
-      setError('Could not advance the block. Try again.');
-    } finally {
-      setAdvancingBlock(false);
+
+  // Data-driven suggestion: what's most worth working on THIS week, per pitcher,
+  // based on his most recent bullpen — not a fixed calendar block.
+  const suggestedFocus = useMemo(() => {
+    if (!selectedRoster || bullpenForPlayer.length === 0) return null;
+    const recent = bullpenForPlayer.slice(-3); // oldest to newest, up to 3
+    const last = recent[recent.length - 1];
+
+    // Safety check only looks at the most recent session — arm status is time-sensitive, not a trend to average
+    const lastTags = (last.notes || '').match(/Tags: ([^|]+)/);
+    const lastTagList = lastTags ? lastTags[1].split(',').map(t => t.trim()) : [];
+    if (lastTagList.some(t => t.startsWith('Arm sore'))) {
+      return {
+        title: 'Arm status first',
+        body: 'Most recent session was tagged for arm soreness — confirm he\'s cleared before any drill work, mechanical or otherwise.',
+        drills: null
+      };
     }
-  };
+    const categoryInfo = {
+      Balance: {
+        title: 'Balance point',
+        drills: 'Freeze Frame Balance Contest + Balance Point Hold',
+        cue: 'Freeze at the top of the leg lift with no wobble.'
+      },
+      FootStrike: {
+        title: 'Elbow height at foot strike',
+        drills: 'Elbow-Up Freeze Check + Towel Drill',
+        cue: 'Elbow at or above shoulder height the instant the front foot lands.'
+      },
+      FlyingOpen: {
+        title: 'Front side timing',
+        drills: 'Down & Out Stride Drill + eyes-on-target cue',
+        cue: 'Glove and front shoulder stay closed toward the target until foot strike.'
+      },
+      ArmWrapping: {
+        title: 'Arm path / compactness',
+        drills: 'Pitching Arm Slot Rotation Drill',
+        cue: 'Ball stays visible during the load — no reaching too far behind the back.'
+      },
+      Trunk: {
+        title: 'Trunk angle (rushing)',
+        drills: 'Mirror Match + Rocker-Pivot-Lift Drill',
+        cue: 'Chest stays tilted toward the target through release.'
+      },
+      Finish: {
+        title: 'Finish',
+        drills: 'Quality Pitch Challenge + Fielding Position Drill',
+        cue: 'Hold the finish position 2 seconds, balanced on both feet.'
+      },
+      Mental: {
+        title: 'Mental routine',
+        drills: 'Pre-pitch routine + Flip It reset',
+        cue: 'Same physical routine every pitch — give him something to control besides results.'
+      }
+    };
+    const tagToCategory = {
+      'Off-balance': 'Balance',
+      'Elbow drop': 'FootStrike',
+      'Flying open': 'FlyingOpen',
+      'Arm wrapping': 'ArmWrapping',
+      'Rushing / upright': 'Trunk',
+      'Short finish': 'Finish'
+    };
+    const throws = (selectedRoster.throws || '').toUpperCase();
+    const weights = recent.length === 3 ? [1, 2, 3] : recent.length === 2 ? [1, 2] : [1]; // most recent = highest weight
+    const scores = {};
+    let anyClearSignal = false;
+    recent.forEach((s, i) => {
+      const w = weights[i];
+      const tagMatch = (s.notes || '').match(/Tags: ([^|]+)/);
+      const tagList = tagMatch ? tagMatch[1].split(',').map(t => t.trim()) : [];
+      let cat = null;
+      for (const t of tagList) {
+        if (tagToCategory[t]) {
+          cat = tagToCategory[t];
+          break;
+        }
+      }
+      if (!cat && tagList.includes('In his head')) cat = 'Mental';
+      if (!cat) {
+        const armSide = throws === 'L' ? s.missLeft : s.missRight;
+        const gloveSide = throws === 'L' ? s.missRight : s.missLeft;
+        const counts = {
+          FootStrike: armSide || 0,
+          FlyingOpen: gloveSide || 0,
+          Trunk: s.missHigh || 0,
+          Finish: s.missLow || 0
+        };
+        const total = counts.FootStrike + counts.FlyingOpen + counts.Trunk + counts.Finish;
+        if (total >= 2) cat = Object.keys(counts).reduce((a, b) => counts[a] >= counts[b] ? a : b);
+      }
+      if (cat) {
+        scores[cat] = (scores[cat] || 0) + w;
+        anyClearSignal = true;
+      }
+    });
+    if (!anyClearSignal) {
+      const avgStrike = recent.reduce((sum, s) => sum + s.strikePct, 0) / recent.length;
+      if (avgStrike >= 0.6) {
+        return {
+          title: 'Command is solid',
+          drills: null,
+          cue: `Averaging ${Math.round(avgStrike * 100)}% strikes over the last ${recent.length} session${recent.length > 1 ? 's' : ''} with no clear miss pattern — reinforce, don't fix what isn't broken.`
+        };
+      }
+      return {
+        title: 'No clear pattern yet',
+        drills: null,
+        cue: 'Keep logging with the zone grid and quick tags — not enough signal yet to point at one fix.'
+      };
+    }
+    const topCat = Object.keys(scores).reduce((a, b) => scores[a] >= scores[b] ? a : b);
+    const needsHandedness = !throws && (topCat === 'FootStrike' || topCat === 'FlyingOpen');
+    return {
+      ...categoryInfo[topCat],
+      source: `Weighted across last ${recent.length} session${recent.length > 1 ? 's' : ''} — most recent counts most` + (needsHandedness ? '. Set his Throws (L/R) in Roster for a sharper read.' : '')
+    };
+  }, [selectedRoster, bullpenForPlayer]);
   if (!apiUrl) {
     return /*#__PURE__*/React.createElement("div", {
       style: {
@@ -762,50 +849,7 @@ function App() {
       fontSize: 13,
       margin: 0
     }
-  }, "Pre-pitch routine (sign → breathe → target → go) + the \"Flip It\" mistake reset after every bad pitch.")), data && thisBlock && /*#__PURE__*/React.createElement("div", {
-    className: "card"
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "disp",
-    style: {
-      fontSize: 11,
-      textTransform: 'uppercase',
-      opacity: 0.7,
-      marginBottom: 6
-    }
-  }, "Current focus — Block ", thisBlock.block), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 15,
-      margin: '2px 0',
-      fontWeight: 600
-    }
-  }, thisBlock.checkpoint), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 13,
-      margin: '6px 0 2px',
-      opacity: 0.85
-    }
-  }, /*#__PURE__*/React.createElement("strong", null, "Advance when:"), " ", thisBlock.advanceWhen), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 13,
-      margin: '6px 0 2px',
-      opacity: 0.85
-    }
-  }, /*#__PURE__*/React.createElement("strong", null, "Drills:"), " ", thisBlock.drills), nextBlockExists ? /*#__PURE__*/React.createElement("button", {
-    className: "save-btn",
-    style: {
-      marginTop: 10,
-      padding: '8px 14px',
-      fontSize: 13
-    },
-    onClick: advanceBlock,
-    disabled: advancingBlock
-  }, advancingBlock ? 'Advancing...' : `→ Advance whole team to Block ${thisBlock.block + 1}`) : /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 12,
-      opacity: 0.6,
-      marginTop: 8
-    }
-  }, "Final block — no further block to advance to.")), data && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "Pre-pitch routine (sign → breathe → target → go) + the \"Flip It\" mistake reset after every bad pitch.")), data && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       gap: 8,
@@ -877,12 +921,53 @@ function App() {
       opacity: 0.6,
       margin: '0 0 8px'
     }
-  }, "Fastballs only until 3 straight bullpens land 60%+ strikes."), thisBlock && /*#__PURE__*/React.createElement("p", {
+  }, "Fastballs only until 3 straight bullpens land 60%+ strikes."), suggestedFocus && /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 13,
-      margin: '4px 0'
+      background: 'var(--paper-dim)',
+      padding: '8px 10px',
+      borderRadius: 6,
+      margin: '4px 0 8px'
     }
-  }, /*#__PURE__*/React.createElement("strong", null, "Team mechanics focus:"), " ", thisBlock.checkpoint, " (Block ", thisBlock.block, ")"), selectedRoster && selectedRoster.struggles && selectedRoster.struggles.length > 0 && /*#__PURE__*/React.createElement("p", {
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "disp",
+    style: {
+      fontSize: 10,
+      textTransform: 'uppercase',
+      opacity: 0.6,
+      marginBottom: 2
+    }
+  }, "This week's focus"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 14,
+      margin: '2px 0',
+      fontWeight: 600
+    }
+  }, suggestedFocus.title), suggestedFocus.drills && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12,
+      margin: '2px 0',
+      opacity: 0.85
+    }
+  }, /*#__PURE__*/React.createElement("strong", null, "Drills:"), " ", suggestedFocus.drills), suggestedFocus.cue && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12,
+      margin: '2px 0',
+      opacity: 0.85
+    }
+  }, suggestedFocus.cue), suggestedFocus.body && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12,
+      margin: '2px 0',
+      opacity: 0.85
+    }
+  }, suggestedFocus.body), suggestedFocus.source && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 10,
+      margin: '4px 0 0',
+      opacity: 0.55,
+      fontStyle: 'italic'
+    }
+  }, suggestedFocus.source)), selectedRoster && selectedRoster.struggles && selectedRoster.struggles.length > 0 && /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 13,
       margin: '4px 0',
@@ -1003,9 +1088,16 @@ function App() {
       fontSize: 11,
       textTransform: 'uppercase',
       opacity: 0.7,
+      marginBottom: 2
+    }
+  }, "Tap the zone hit, or where it missed"), /*#__PURE__*/React.createElement("p", {
+    className: "ts",
+    style: {
+      fontSize: 10,
+      opacity: 0.55,
       marginBottom: 8
     }
-  }, "Tap the zone hit, or where it missed"), /*#__PURE__*/React.createElement("div", {
+  }, "Left/Right = the pitcher's own view, not the catcher's"), /*#__PURE__*/React.createElement("div", {
     className: "target-grid",
     style: {
       marginBottom: 12
