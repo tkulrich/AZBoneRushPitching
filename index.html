@@ -976,20 +976,20 @@ function App() {
       padding: '6px 8px',
       borderRadius: 4
     }
-  }, "⚠️ ", /*#__PURE__*/React.createElement("strong", null, "Still working on:"), " ", selectedRoster.struggles.join(', ')), selectedRoster && selectedRoster.pitches ? /*#__PURE__*/React.createElement("p", {
+  }, "⚠️ ", /*#__PURE__*/React.createElement("strong", null, "Still working on:"), " ", selectedRoster.struggles.join(', ')), selectedRoster && selectedRoster.pitches && selectedRoster.pitches.length > 0 ? /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 13,
       margin: '4px 0',
       opacity: 0.85
     }
-  }, "🎯 ", /*#__PURE__*/React.createElement("strong", null, "Pitches:"), " ", selectedRoster.pitches) : /*#__PURE__*/React.createElement("p", {
+  }, "🎯 ", /*#__PURE__*/React.createElement("strong", null, "Pitches:"), " ", selectedRoster.pitches.join(', ')) : /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 13,
       margin: '4px 0',
       opacity: 0.6,
       fontStyle: 'italic'
     }
-  }, "❓ Not sure what ", selectedId ? selectedId.split(' ')[0] : 'he', "'s throwing yet — worth asking, add it to the Roster tab."), currentBuildupWeek && /*#__PURE__*/React.createElement("p", {
+  }, "❓ Not sure what ", selectedId ? selectedId.split(' ')[0] : 'he', "'s throwing yet — worth asking, mark it on the Roster tab."), currentBuildupWeek && /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 13,
       margin: '4px 0'
