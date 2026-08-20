@@ -374,6 +374,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 
 </script>
 <script>
+
 const {
   useState,
   useEffect,
@@ -513,6 +514,13 @@ function App() {
   const selectedRoster = useMemo(() => {
     if (!data) return null;
     return data.roster.find(p => p.name === selectedId) || null;
+  }, [data, selectedId]);
+  const lastArchiveNote = useMemo(() => {
+    if (!data || !data.practiceNotes || !selectedId) return null;
+    const firstName = selectedId.split(' ')[0].toLowerCase();
+    const matches = data.practiceNotes.filter(n => (n.player || '').toLowerCase() === firstName);
+    if (!matches.length) return null;
+    return matches.reduce((a, b) => (a.date >= b.date ? a : b));
   }, [data, selectedId]);
   const currentBuildupWeek = useMemo(() => {
     if (!data || !data.buildup || !data.buildup.length) return null;
@@ -1004,7 +1012,20 @@ function App() {
       margin: '6px 0 0',
       opacity: 0.85
     }
-  }, /*#__PURE__*/React.createElement("strong", null, "Spring baseline:"), " ", springRecord.read), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("strong", null, "Spring baseline:"), " ", springRecord.read), lastArchiveNote && lastArchiveNote.nextFocus && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      margin: '6px 0 0',
+      opacity: 0.9,
+      background: 'rgba(11,12,12,0.06)',
+      padding: '8px 10px',
+      borderRadius: 6
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    style: { margin: 0, fontWeight: 600 }
+  }, "\uD83D\uDCDD Watch for (", lastArchiveNote.date, ")"), /*#__PURE__*/React.createElement("p", {
+    style: { margin: '4px 0 0' }
+  }, lastArchiveNote.nextFocus)), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 10,
       paddingTop: 10,
@@ -1330,6 +1351,7 @@ function App() {
   }, p.avg !== null ? p.avg + '%' : '—'))))));
 }
 ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
+
 </script>
 </body>
 </html>
