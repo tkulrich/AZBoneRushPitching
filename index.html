@@ -377,6 +377,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 
 
 
+
 const {
   useState,
   useEffect,
@@ -1002,7 +1003,14 @@ function App() {
     marginBottom: 12
   }
 }, /*#__PURE__*/React.createElement("button", {
-  className: "ball-btn",
+  className: "zone",
+  style: {
+    padding: '12px 6px',
+    fontFamily: 'Oswald,sans-serif',
+    fontWeight: 600,
+    color: 'var(--ink)',
+    cursor: 'pointer'
+  },
   onClick: () => logGamePitch('ball')
 }, "BALL"), /*#__PURE__*/React.createElement("button", {
   className: "zone",
@@ -1047,8 +1055,13 @@ function App() {
   },
   onClick: () => logGamePitch('bipOut')
 }, "BALL IN PLAY — OUT"), /*#__PURE__*/React.createElement("button", {
-  className: "ball-btn",
+  className: "zone",
   style: {
+    padding: '12px 6px',
+    fontFamily: 'Oswald,sans-serif',
+    fontWeight: 600,
+    color: 'var(--ink)',
+    cursor: 'pointer',
     fontSize: 11
   },
   onClick: () => logGamePitch('bipHit')
@@ -1543,6 +1556,7 @@ function App() {
   }, p.avg !== null ? p.avg + '%' : '—'))))));
 }
 ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
+
 
 
 
