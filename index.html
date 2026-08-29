@@ -378,6 +378,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 
 
 
+
 const {
   useState,
   useEffect,
@@ -506,7 +507,7 @@ function App() {
   }]);
   const undo = () => setDraft(draft.slice(0, -1));
   const gameCounts = useMemo(() => {
-    const c = { ball: 0, strike: 0, foul: 0, strikeout: 0, bipOut: 0, bipHit: 0 };
+    const c = { ball: 0, strike: 0, swStrike: 0, foul: 0, walk: 0, strikeout: 0, bipOut: 0, bipHit: 0 };
     gameDraft.forEach(t => { c[t] = (c[t] || 0) + 1; });
     return c;
   }, [gameDraft]);
@@ -526,9 +527,10 @@ function App() {
           type: 'addGameEntry',
           date: new Date().toISOString().slice(0, 10),
           player: selectedId, pitches: gameDraft.length, innings,
-          notes: `Scrimmage — B${gameCounts.ball} S${gameCounts.strike} F${gameCounts.foul} K${gameCounts.strikeout} Out${gameCounts.bipOut} Hit${gameCounts.bipHit}`,
+          notes: `Scrimmage — B${gameCounts.ball} S${gameCounts.strike} SwK${gameCounts.swStrike} F${gameCounts.foul} W${gameCounts.walk} K${gameCounts.strikeout} Out${gameCounts.bipOut} Hit${gameCounts.bipHit}`,
           balls: gameCounts.ball, strikes: gameCounts.strike, fouls: gameCounts.foul,
-          strikeouts: gameCounts.strikeout, bipOut: gameCounts.bipOut, bipHit: gameCounts.bipHit
+          strikeouts: gameCounts.strikeout, bipOut: gameCounts.bipOut, bipHit: gameCounts.bipHit,
+          swingingStrikes: gameCounts.swStrike, walks: gameCounts.walk
         })
       });
       const json = await res.json();
@@ -978,7 +980,7 @@ function App() {
     opacity: 0.8,
     margin: '4px 0 0'
   }
-}, "B ", gameCounts.ball, " · S ", gameCounts.strike, " · F ", gameCounts.foul, " · K ", gameCounts.strikeout, " · Out ", gameCounts.bipOut, " · Hit ", gameCounts.bipHit), gameOuts > 0 && /*#__PURE__*/React.createElement("p", {
+}, "B ", gameCounts.ball, " · S ", gameCounts.strike, " · SwK ", gameCounts.swStrike, " · F ", gameCounts.foul, " · W ", gameCounts.walk, " · K ", gameCounts.strikeout, " · Out ", gameCounts.bipOut, " · Hit ", gameCounts.bipHit), gameOuts > 0 && /*#__PURE__*/React.createElement("p", {
   className: "disp",
   style: {
     fontSize: 12,
@@ -998,74 +1000,99 @@ function App() {
 }, "Tap each pitch's result"), /*#__PURE__*/React.createElement("div", {
   style: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3,1fr)',
+    gridTemplateColumns: 'repeat(4,1fr)',
     gap: 6,
     marginBottom: 12
   }
 }, /*#__PURE__*/React.createElement("button", {
   className: "zone",
   style: {
-    padding: '12px 6px',
-    fontFamily: 'Oswald,sans-serif',
-    fontWeight: 600,
-    color: 'var(--ink)',
-    cursor: 'pointer'
-  },
-  onClick: () => logGamePitch('ball')
-}, "BALL"), /*#__PURE__*/React.createElement("button", {
-  className: "zone",
-  style: {
-    padding: '12px 6px',
-    fontFamily: 'Oswald,sans-serif',
-    fontWeight: 600,
-    color: 'var(--ink)',
-    cursor: 'pointer'
-  },
-  onClick: () => logGamePitch('strike')
-}, "STRIKE"), /*#__PURE__*/React.createElement("button", {
-  className: "zone",
-  style: {
-    padding: '12px 6px',
-    fontFamily: 'Oswald,sans-serif',
-    fontWeight: 600,
-    color: 'var(--ink)',
-    cursor: 'pointer'
-  },
-  onClick: () => logGamePitch('foul')
-}, "FOUL"), /*#__PURE__*/React.createElement("button", {
-  className: "zone",
-  style: {
-    padding: '12px 6px',
+    padding: '12px 4px',
     fontFamily: 'Oswald,sans-serif',
     fontWeight: 600,
     color: 'var(--ink)',
     cursor: 'pointer',
     fontSize: 12
   },
+  onClick: () => logGamePitch('ball')
+}, "BALL"), /*#__PURE__*/React.createElement("button", {
+  className: "zone",
+  style: {
+    padding: '12px 4px',
+    fontFamily: 'Oswald,sans-serif',
+    fontWeight: 600,
+    color: 'var(--ink)',
+    cursor: 'pointer',
+    fontSize: 12
+  },
+  onClick: () => logGamePitch('strike')
+}, "STRIKE"), /*#__PURE__*/React.createElement("button", {
+  className: "zone",
+  style: {
+    padding: '12px 4px',
+    fontFamily: 'Oswald,sans-serif',
+    fontWeight: 600,
+    color: 'var(--ink)',
+    cursor: 'pointer',
+    fontSize: 11
+  },
+  onClick: () => logGamePitch('swStrike')
+}, "SWINGING K"), /*#__PURE__*/React.createElement("button", {
+  className: "zone",
+  style: {
+    padding: '12px 4px',
+    fontFamily: 'Oswald,sans-serif',
+    fontWeight: 600,
+    color: 'var(--ink)',
+    cursor: 'pointer',
+    fontSize: 12
+  },
+  onClick: () => logGamePitch('foul')
+}, "FOUL"), /*#__PURE__*/React.createElement("button", {
+  className: "zone",
+  style: {
+    padding: '12px 4px',
+    fontFamily: 'Oswald,sans-serif',
+    fontWeight: 600,
+    color: 'var(--ink)',
+    cursor: 'pointer',
+    fontSize: 12
+  },
+  onClick: () => logGamePitch('walk')
+}, "WALK"), /*#__PURE__*/React.createElement("button", {
+  className: "zone",
+  style: {
+    padding: '12px 4px',
+    fontFamily: 'Oswald,sans-serif',
+    fontWeight: 600,
+    color: 'var(--ink)',
+    cursor: 'pointer',
+    fontSize: 11
+  },
   onClick: () => logGamePitch('strikeout')
 }, "STRIKEOUT"), /*#__PURE__*/React.createElement("button", {
   className: "zone",
   style: {
-    padding: '12px 6px',
+    padding: '12px 4px',
     fontFamily: 'Oswald,sans-serif',
     fontWeight: 600,
     color: 'var(--ink)',
     cursor: 'pointer',
-    fontSize: 11
+    fontSize: 10
   },
   onClick: () => logGamePitch('bipOut')
-}, "BALL IN PLAY — OUT"), /*#__PURE__*/React.createElement("button", {
+}, "BIP — OUT"), /*#__PURE__*/React.createElement("button", {
   className: "zone",
   style: {
-    padding: '12px 6px',
+    padding: '12px 4px',
     fontFamily: 'Oswald,sans-serif',
     fontWeight: 600,
     color: 'var(--ink)',
     cursor: 'pointer',
-    fontSize: 11
+    fontSize: 10
   },
   onClick: () => logGamePitch('bipHit')
-}, "BALL IN PLAY — HIT")), /*#__PURE__*/React.createElement("div", {
+}, "BIP — HIT")), /*#__PURE__*/React.createElement("div", {
   style: {
     display: 'flex',
     gap: 8
@@ -1085,7 +1112,7 @@ function App() {
     marginTop: 8,
     marginBottom: 0
   }
-}, "Innings and pitch count are calculated automatically from these taps — no separate entry needed."))), selectedId && appMode === 'bullpen' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+}, "Innings and pitch count are calculated automatically from these taps — no separate entry needed. For the pitch that ends an at-bat, tap the outcome (Walk, Strikeout, BIP) instead of Ball/Strike — don't tap both."))), selectedId && appMode === 'bullpen' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "card"
   }, /*#__PURE__*/React.createElement("p", {
     className: "disp",
@@ -1556,6 +1583,7 @@ function App() {
   }, p.avg !== null ? p.avg + '%' : '—'))))));
 }
 ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
+
 
 
 
