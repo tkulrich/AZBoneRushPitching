@@ -380,6 +380,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 
 
 
+
+
 const {
   useState,
   useEffect,
@@ -1589,58 +1591,7 @@ function App() {
         marginLeft: 4
       }
     }, "🎥")), /*#__PURE__*/React.createElement("span", null, pct, "% ", delta !== null && (delta >= 0 ? `▲${delta}` : `▼${Math.abs(delta)}`)));
-  })))), leaderboard.length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "card"
-  }, /*#__PURE__*/React.createElement("p", {
-    className: "disp",
-    style: {
-      fontSize: 11,
-      textTransform: 'uppercase',
-      opacity: 0.7,
-      marginBottom: 10
-    }
-  }, "🏆 Team leaderboard · avg last 3"), leaderboard.map((p, i) => /*#__PURE__*/React.createElement("div", {
-    key: p.name,
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8,
-      marginBottom: 6
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "mono",
-    style: {
-      fontSize: 12,
-      width: 16,
-      opacity: 0.6
-    }
-  }, i + 1), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 13,
-      flex: 1
-    }
-  }, p.name), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      height: 8,
-      borderRadius: 99,
-      background: 'var(--paper-dim)',
-      overflow: 'hidden'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      height: '100%',
-      width: (p.avg || 0) + '%',
-      background: 'var(--brick)'
-    }
-  })), /*#__PURE__*/React.createElement("span", {
-    className: "mono",
-    style: {
-      fontSize: 12,
-      width: 36,
-      textAlign: 'right'
-    }
-  }, p.avg !== null ? p.avg + '%' : '—'))))), blendedLeaderboard.length > 0 && /*#__PURE__*/React.createElement("div", {
+  })))), blendedLeaderboard.length > 0 && /*#__PURE__*/React.createElement("div", {
   className: "card"
 }, /*#__PURE__*/React.createElement("p", {
   className: "disp",
@@ -1703,7 +1654,58 @@ function App() {
     width: 36,
     textAlign: 'right'
   }
-}, p.blended !== null ? p.blended + '%' : '—')))), gameLeaderboard.length > 0 && /*#__PURE__*/React.createElement("div", {
+}, p.blended !== null ? p.blended + '%' : '—')))), leaderboard.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "disp",
+    style: {
+      fontSize: 11,
+      textTransform: 'uppercase',
+      opacity: 0.7,
+      marginBottom: 10
+    }
+  }, "🏆 Bullpen strike % · avg last 3"), leaderboard.map((p, i) => /*#__PURE__*/React.createElement("div", {
+    key: p.name,
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 6
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "mono",
+    style: {
+      fontSize: 12,
+      width: 16,
+      opacity: 0.6
+    }
+  }, i + 1), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      flex: 1
+    }
+  }, p.name), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      height: 8,
+      borderRadius: 99,
+      background: 'var(--paper-dim)',
+      overflow: 'hidden'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: '100%',
+      width: (p.avg || 0) + '%',
+      background: 'var(--brick)'
+    }
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "mono",
+    style: {
+      fontSize: 12,
+      width: 36,
+      textAlign: 'right'
+    }
+  }, p.avg !== null ? p.avg + '%' : '—'))))), gameLeaderboard.length > 0 && /*#__PURE__*/React.createElement("div", {
   className: "card"
 }, /*#__PURE__*/React.createElement("p", {
   className: "disp",
@@ -1764,6 +1766,8 @@ function App() {
 }, p.avg !== null ? p.avg + '%' : '—')))));
 }
 ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
+
+
 
 
 
