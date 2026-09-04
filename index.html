@@ -379,6 +379,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 
 
 
+
 const {
   useState,
   useEffect,
@@ -662,8 +663,67 @@ function App() {
     }).sort((a, b) => (b.avg || 0) - (a.avg || 0));
   }, [data]);
 
-  // Data-driven suggestion: what's most worth working on THIS week, per pitcher,
-  // based on his most recent bullpen — not a fixed calendar block.
+  // Blended strike % — combines bullpen sessions and game/scrimmage outings for each player,
+  // weighted so more recent events count more, and game data counts slightly more than bullpen data.
+  const blendedLeaderboard = useMemo(() => {
+    if (!data) return [];
+    const GAME_WEIGHT = 1.25; // "slightly more" emphasis on real game/scrimmage data
+    const BULLPEN_WEIGHT = 1.0;
+    const RECENT_EVENTS = 6; // how many combined events (bullpen + game) to consider per player
+
+    return data.roster.map(p => {
+      const bullpenEvents = data.bullpen
+        .filter(s => s.player === p.name)
+        .map(s => ({ date: s.date, strikes: s.strikes, pitches: s.totalPitches, source: 'bullpen' }));
+      const gameEvents = data.game
+        .filter(s => s.player === p.name && s.pitches)
+        .map(s => {
+          const strikeTypePitches = (s.strikes || 0) + (s.swingingStrikes || 0) + (s.fouls || 0) +
+                                     (s.strikeouts || 0) + (s.bipOut || 0) + (s.bipHit || 0);
+          return { date: s.date, strikes: strikeTypePitches, pitches: s.pitches, source: 'game' };
+        });
+
+      const combined = [...bullpenEvents, ...gameEvents]
+        .filter(e => e.pitches > 0)
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(-RECENT_EVENTS);
+
+      if (combined.length === 0) return { name: p.name, blended: null, count: 0 };
+
+      let weightedStrikes = 0, weightedPitches = 0;
+      combined.forEach((e, i) => {
+        const recencyWeight = i + 1; // oldest of the window = 1, most recent = RECENT_EVENTS
+        const sourceWeight = e.source === 'game' ? GAME_WEIGHT : BULLPEN_WEIGHT;
+        const w = recencyWeight * sourceWeight;
+        weightedStrikes += w * e.strikes;
+        weightedPitches += w * e.pitches;
+      });
+
+      const blended = weightedPitches > 0 ? Math.round((weightedStrikes / weightedPitches) * 100) : null;
+      return { name: p.name, blended, count: combined.length, gameCount: combined.filter(e => e.source === 'game').length };
+    }).sort((a, b) => (b.blended || 0) - (a.blended || 0));
+  }, [data]);
+
+  // Game/scrimmage-only strike % — same strike-type derivation as the blend, but games only, no bullpen mixed in.
+  const gameLeaderboard = useMemo(() => {
+    if (!data) return [];
+    return data.roster.map(p => {
+      const gs = data.game
+        .filter(s => s.player === p.name && s.pitches)
+        .map(s => {
+          const strikeTypePitches = (s.strikes || 0) + (s.swingingStrikes || 0) + (s.fouls || 0) +
+                                     (s.strikeouts || 0) + (s.bipOut || 0) + (s.bipHit || 0);
+          return { date: s.date, strikes: strikeTypePitches, pitches: s.pitches };
+        })
+        .sort((a, b) => a.date.localeCompare(b.date));
+      const last3 = gs.slice(-3);
+      const totalStrikes = last3.reduce((sum, s) => sum + s.strikes, 0);
+      const totalPitches = last3.reduce((sum, s) => sum + s.pitches, 0);
+      const avg = totalPitches > 0 ? Math.round((totalStrikes / totalPitches) * 100) : null;
+      return { name: p.name, avg, count: gs.length };
+    }).filter(p => p.count > 0).sort((a, b) => (b.avg || 0) - (a.avg || 0));
+  }, [data]);
+
   const suggestedFocus = useMemo(() => {
     if (!selectedRoster || bullpenForPlayer.length === 0) return null;
     const recent = bullpenForPlayer.slice(-3); // oldest to newest, up to 3
@@ -1580,9 +1640,131 @@ function App() {
       width: 36,
       textAlign: 'right'
     }
-  }, p.avg !== null ? p.avg + '%' : '—'))))));
+  }, p.avg !== null ? p.avg + '%' : '—'))))), blendedLeaderboard.length > 0 && /*#__PURE__*/React.createElement("div", {
+  className: "card"
+}, /*#__PURE__*/React.createElement("p", {
+  className: "disp",
+  style: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+    opacity: 0.7,
+    marginBottom: 4
+  }
+}, "⚾ Blended strike % · bullpens + games"), /*#__PURE__*/React.createElement("p", {
+  className: "ts",
+  style: {
+    fontSize: 10,
+    opacity: 0.55,
+    marginBottom: 10
+  }
+}, "Last 6 events per pitcher · recent counts most · games weighted slightly higher than bullpens"), blendedLeaderboard.map((p, i) => /*#__PURE__*/React.createElement("div", {
+  key: p.name,
+  style: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6
+  }
+}, /*#__PURE__*/React.createElement("span", {
+  className: "mono",
+  style: {
+    fontSize: 12,
+    width: 16,
+    opacity: 0.6
+  }
+}, i + 1), /*#__PURE__*/React.createElement("span", {
+  style: {
+    fontSize: 13,
+    flex: 1
+  }
+}, p.name, p.gameCount > 0 && /*#__PURE__*/React.createElement("span", {
+  style: {
+    opacity: 0.5,
+    fontSize: 10
+  }
+}, " (", p.gameCount, "g)")), /*#__PURE__*/React.createElement("div", {
+  style: {
+    flex: 1,
+    height: 8,
+    borderRadius: 99,
+    background: 'var(--paper-dim)',
+    overflow: 'hidden'
+  }
+}, /*#__PURE__*/React.createElement("div", {
+  style: {
+    height: '100%',
+    width: (p.blended || 0) + '%',
+    background: 'var(--teal-bright)'
+  }
+})), /*#__PURE__*/React.createElement("span", {
+  className: "mono",
+  style: {
+    fontSize: 12,
+    width: 36,
+    textAlign: 'right'
+  }
+}, p.blended !== null ? p.blended + '%' : '—')))), gameLeaderboard.length > 0 && /*#__PURE__*/React.createElement("div", {
+  className: "card"
+}, /*#__PURE__*/React.createElement("p", {
+  className: "disp",
+  style: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+    opacity: 0.7,
+    marginBottom: 4
+  }
+}, "🎮 Game/scrimmage strike % · avg last 3"), /*#__PURE__*/React.createElement("p", {
+  className: "ts",
+  style: {
+    fontSize: 10,
+    opacity: 0.55,
+    marginBottom: 10
+  }
+}, "Games only, no bullpen data mixed in — only shows pitchers with at least 1 logged game"), gameLeaderboard.map((p, i) => /*#__PURE__*/React.createElement("div", {
+  key: p.name,
+  style: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6
+  }
+}, /*#__PURE__*/React.createElement("span", {
+  className: "mono",
+  style: {
+    fontSize: 12,
+    width: 16,
+    opacity: 0.6
+  }
+}, i + 1), /*#__PURE__*/React.createElement("span", {
+  style: {
+    fontSize: 13,
+    flex: 1
+  }
+}, p.name), /*#__PURE__*/React.createElement("div", {
+  style: {
+    flex: 1,
+    height: 8,
+    borderRadius: 99,
+    background: 'var(--paper-dim)',
+    overflow: 'hidden'
+  }
+}, /*#__PURE__*/React.createElement("div", {
+  style: {
+    height: '100%',
+    width: (p.avg || 0) + '%',
+    background: 'var(--black)'
+  }
+})), /*#__PURE__*/React.createElement("span", {
+  className: "mono",
+  style: {
+    fontSize: 12,
+    width: 36,
+    textAlign: 'right'
+  }
+}, p.avg !== null ? p.avg + '%' : '—')))));
 }
 ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
+
 
 
 
